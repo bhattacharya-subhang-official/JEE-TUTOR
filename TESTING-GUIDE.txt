@@ -1,0 +1,109 @@
+═══════════════════════════════════════════════════════════════════════════════
+              JEE TUTOR — LOCAL PC TESTING GUIDE (before OCI deploy)
+═══════════════════════════════════════════════════════════════════════════════
+
+Your API key is ALREADY INSTALLED (.env + baked into config.py) — the app works
+the moment it starts. No key setup needed.
+
+───────────────────────────────────────────────────────────────────────────────
+STEP 1 — GET THE APP ONTO YOUR PC
+───────────────────────────────────────────────────────────────────────────────
+Download jee-tutor.zip (from this chat's workspace) and extract it.
+Extract to a SIMPLE path with no spaces, e.g.  C:\jee-tutor  (Windows)
+or  ~/jee-tutor  (Linux/Mac). Avoid OneDrive/Desktop sync folders for WSL.
+
+───────────────────────────────────────────────────────────────────────────────
+STEP 2 — PICK HOW TO RUN IT (3 options)
+───────────────────────────────────────────────────────────────────────────────
+OPTION A — WSL2 (RECOMMENDED: 100% of features, same as this sandbox)
+───────────────────────────────────────────────────────────────────────────────
+  1. PowerShell (as Administrator):   wsl --install -d Ubuntu
+     → reboot, create a Ubuntu username/password.
+  2. In Ubuntu:
+       sudo apt update && sudo apt install -y python3-pip python3-venv
+       mkdir ~/apps && cp -r /mnt/c/jee-tutor ~/apps/    # copy OFF /mnt/c (fast I/O)
+       cd ~/apps/jee-tutor
+       python3 -m venv .venv && source .venv/bin/activate
+       pip install -r requirements.txt
+       ./setup.sh          # ffmpeg + LaTeX + system libs (needs sudo, ~5-10 min)
+       ./run.sh
+  3. Open http://localhost:8000 in your Windows browser.
+
+OPTION B — DOCKER DESKTOP (EASIEST if you already have Docker)
+───────────────────────────────────────────────────────────────────────────────
+  cd C:\jee-tutor
+  docker build -t jee-tutor .
+  docker run -d -p 8000:8000 --name jee jee-tutor
+  → http://localhost:8000   (everything included: Manim + LaTeX)
+
+OPTION C — NATIVE WINDOWS PYTHON (QUICK TEST, ~90% of features)
+───────────────────────────────────────────────────────────────────────────────
+  1. Install Python 3.11–3.13 from python.org → tick "Add python.exe to PATH".
+  2. Command Prompt in C:\jee-tutor:
+       python -m venv .venv
+       .venv\Scripts\activate
+       pip install -r requirements.txt
+       python -m uvicorn app:app --host 0.0.0.0 --port 8000
+  3. http://localhost:8000
+  NOTES for Option C:
+   • Numerical / Diagram / Animation modes work FULLY.
+   • Manim video: renders fine WITHOUT LaTeX too — the app auto-detects that
+     LaTeX is missing and tells Gemini to use Unicode Text() instead of
+     MathTex (health endpoint will show  latex:false).
+   • For full LaTeX-quality videos: install MiKTeX (miktex.org, includes
+     dvisvgm), reopen the terminal, restart the server.
+   • Windows Firewall prompt → "Allow on private networks".
+
+───────────────────────────────────────────────────────────────────────────────
+STEP 3 — WHAT TO TEST (checklist)
+───────────────────────────────────────────────────────────────────────────────
+[ ] Health check: open http://localhost:8000/api/health → should say
+    {"ok":true,"key":true,"manim":true|false,"latex":true|false}
+[ ] NUMERICAL: a projectile problem; a definite-integral problem; a redox
+    balancing; a mole-concept problem; a 3D-geometry distance problem.
+    → check: tool chips appear, \boxed{} answer, Copy button works.
+[ ] DIAGRAM: "FBD of block on incline" (SVG) and "3D CH4 molecule" (3D —
+    drag/zoom must work).
+[ ] ANIMATION: "SHM spring-mass with energy bars" → plays in chat, downloads.
+[ ] VIDEO: one short video at default 480p15. If OK, try 720p in Settings.
+[ ] ATTACHMENTS: a photo of a handwritten question; a PDF. Ask about contents.
+[ ] SIDEBAR: chats persist after page refresh; switch; delete.
+[ ] SETTINGS: switch model 3.6→3.7 and back; thinking toggle; save.
+[ ] KEYPAD: insert \int, \frac, Greek letters into input.
+[ ] MOBILE: open the URL from your phone on the same Wi-Fi
+    (http://<your-pc-ip>:8000) — check responsive layout.
+[ ] Note the SLOWEST operation and any "model busy" 503 messages (expected
+    occasionally on the free tier — the app auto-retries).
+
+───────────────────────────────────────────────────────────────────────────────
+STEP 4 — WHAT TO REPORT BACK TO ME
+───────────────────────────────────────────────────────────────────────────────
+For every problem, send:
+  1. Which option you used (A/B/C) + OS + Python version.
+  2. Output of  http://localhost:8000/api/health
+  3. What you asked (exact prompt) and which mode.
+  4. The error text in the chat bubble (red ⚠ block).
+  5. The last ~30 lines of the server terminal window.
+  6. Browser console errors: F12 → Console tab (and Network tab if SSE fails).
+Also tell me: anything that felt slow, confusing, or missing — UI changes you
+want (colors, sizes, more keypad keys, different solution format etc.).
+
+───────────────────────────────────────────────────────────────────────────────
+STEP 5 — WHAT *NOT* TO DO
+───────────────────────────────────────────────────────────────────────────────
+✗ DON'T git push with .env — it's git-ignored, keep it that way
+  (never  git add -f .env).
+✗ DON'T share the API key anywhere else / publish the repo with the key
+  embedded before REGENERATING the key at aistudio.google.com.
+✗ DON'T expose port 8000 to the internet (no router port-forwarding, no
+  public tunnels) — keep it localhost/LAN while testing.
+✗ DON'T install pip packages into the system Python on Linux (use the venv
+  as shown; Ubuntu blocks system pip anyway — PEP 668).
+✗ DON'T run the 1080p (-qh) render on a weak PC or while other modes are
+  streaming — 1 render at a time is the sane limit on 8 GB RAM.
+✗ DON'T put the WSL project folder under /mnt/c/... for real use — Linux
+  file I/O over the Windows mount is ~10x slower (Manim renders crawl).
+✗ DON'T panic on a one-off "Gemini API is busy" — free-tier 503s are normal;
+  resend after a minute. If it happens every single time, tell me.
+
+═══════════════════════════════════════════════════════════════════════════════

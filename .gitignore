@@ -1,0 +1,17 @@
+# secrets — never commit
+.env
+
+# runtime data & generated media
+data/
+media/
+manim.cfg
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# node/os
+node_modules/
+.DS_Store

@@ -1,0 +1,570 @@
+═══════════════════════════════════════════════════════════════════════════════
+                     Σ JEE TUTOR — ADVANCED SOLVER
+                    Complete Project Documentation
+                 (last updated: build 2.0 — full-syllabus edition)
+═══════════════════════════════════════════════════════════════════════════════
+
+CONTENTS
+─────────
+ 1.  What this app is
+ 2.  Quick start
+ 3.  The four capability modes
+ 4.  Compute engines — complete tool catalogue (38 tools)
+ 5.  Syllabus coverage map (JEE Advanced: Physics / Chemistry / Maths)
+ 6.  Architecture & file-by-file guide
+ 7.  API reference (backend endpoints)
+ 8.  Configuration (.env, Settings UI, embedded key)
+ 9.  Deployment (local / Oracle Cloud Free Tier / Docker)
+ 10. Security notes (API key handling)
+ 11. Testing performed & verified results
+ 12. Changelog — all changes made during development
+ 13. Troubleshooting
+ 14. Known limitations & ideas for the future
+
+───────────────────────────────────────────────────────────────────────────────
+1. WHAT THIS APP IS
+───────────────────────────────────────────────────────────────────────────────
+A chat-style AI web application for IIT-JEE **Advanced** preparation, powered by
+the Google Gemini API. Unlike a plain chatbot, Gemini acts as the REASONER and
+ORCHESTRATOR, while every real computation is executed by local, verified
+computation engines (SymPy, NumPy/SciPy, formula solvers, a Manim renderer).
+The model plans tool calls; the engines compute; the model writes the final
+exam-style solution with the verified numbers. It can also generate labelled
+SVG diagrams, interactive 3D scenes, HTML animations, and fully rendered
+Manim videos (MP4).
+
+Key properties:
+  • Chat window UI (dark theme) with retractable left sidebar storing all
+    previous chats (server-side JSON persistence).
+  • Text input with: ∑ƒ scientific-notation keypad (LaTeX/Greek/calculus
+    templates), attachment button (PDF/DOCX/TXT/CSV/images), and a
+    capabilities dropdown (Numerical / Diagram / Animation / Manim Video).
+  • Every response has ⧉ Copy (text) and ⬇ Download (media: SVG/HTML/MP4/PNG).
+  • KaTeX math rendering, streaming responses (SSE), tool-call chips you can
+    expand to see exactly what each engine computed.
+  • The Gemini API key is pre-installed (baked into config.py as a fallback
+    AND stored in .env) — the app works out of the box.
+
+───────────────────────────────────────────────────────────────────────────────
+2. QUICK START
+───────────────────────────────────────────────────────────────────────────────
+  ./setup.sh      # one-time: apt packages (ffmpeg, LaTeX, Manim libs), pip
+                  # packages, KaTeX + three.js download
+  ./run.sh        # serve on http://0.0.0.0:8000 (PORT env var to change)
+
+  Requirements: Linux (Debian/Ubuntu tested; ARM64 ok), Python 3.10+,
+  ~1 GB RAM is enough (Manim renders at 480p15 by default).
+
+  The API key is already installed. To change it: sidebar → Settings (⚙) →
+  paste new key → Save (persists to .env), or edit .env directly.
+
+───────────────────────────────────────────────────────────────────────────────
+3. THE FOUR CAPABILITY MODES
+───────────────────────────────────────────────────────────────────────────────
+🧮 NUMERICAL  — Full exam-style solutions:
+    📋 Setup (Given/To-find) → 🧠 Concept (+formulae) → ✍️ numbered Solution
+    steps → ✅ Final Answer in \boxed{} → ⚡ Pitfalls & Tips.
+    Gemini plans calls to the 38-tool engine suite (below); up to 7 tool
+    rounds per question; every number is engine-verified. The final write-up
+    streams token-by-token.
+
+📐 DIAGRAM   — Returns STRICT JSON from Gemini:
+    • kind="svg": a complete standalone, dark-theme SVG diagram (force
+      vectors, ray optics, reaction mechanisms, shaded calculus regions,
+      hatched grounds, angle arcs, labelled quantities).
+    • kind="3d": a scene JSON (spheres/boxes/cylinders/arrows/lines/planes/
+      cones/labels) rendered live in the chat with three.js — drag to rotate,
+      scroll to zoom, optional auto-rotate (e.g. VSEPR molecules, field
+      geometry, crystal structures, rotational mechanics).
+    SVGs are saved to media/diagrams/*.svg (downloadable).
+
+🎬 ANIMATION — A single self-contained animated HTML file (no external
+    resources): 2D canvas/SVG or 3D WebGL via the bundled three.js +
+    SimpleOrbit helper injected server-side. ~8–20 s looping physics with
+    play/pause + speed controls. Saved to media/anim/*.html, shown in a
+    sandboxed iframe, downloadable.
+
+🎥 MANIM VIDEO — Gemini writes a complete Manim CE scene (MathTex LaTeX
+    equations are supported — LaTeX is installed), the server renders a real
+    MP4 with ffmpeg. If the render fails, the compile error is sent back to
+    the model which fixes the code and re-renders (up to 2 attempts).
+    Output: media/manim/<id>.mp4 + the source .py, both downloadable.
+    Quality: -ql (480p15, default) / -qm (720p30) / -qh (1080p60) in Settings.
+
+───────────────────────────────────────────────────────────────────────────────
+4. COMPUTE ENGINES — COMPLETE TOOL CATALOGUE (38 tools)
+───────────────────────────────────────────────────────────────────────────────
+GENERAL
+  calc                 Safe arithmetic (trig, logs, constants pi/e/g/c/h/NA/q/me/R/F…)
+  python_exec          Sandboxed subprocess with numpy/scipy/sympy preloaded;
+                       filesystem/network blocked; 25 s timeout
+  units_convert        SI/imperial conversions via SymPy units
+  physical_constant    g, G, c, h, hbar, e, me, mp, mn, amu, NA, kB, R, F,
+                       epsilon0, mu0, k_coulomb, atm, eV, Rydberg, Bohr, sigma, wien
+
+ALGEBRA & CALCULUS (SymPy)
+  solve_equation       Symbolic systems (algebra/trig/exp/log), multi-unknown
+  nsolve_system        Numeric Newton solve for nonlinear systems
+  calculus             diff / integrate (definite+indefinite) / limit (one & both
+                       sided) / Taylor series
+  simplify_expr        simplify | expand | factor | trigsimp | apart | together | radsimp
+  polynomial_roots     Exact or numeric roots (nroots)
+  quadratic_analysis   D, exact/numeric roots, nature, sum/product, vertex, axis,
+                       min/max, factorised form
+  matrix_op            det, inverse, transpose, rank, trace, eigenvalues,
+                       eigenvectors, charpoly, multiply, add, power, adjoint
+  vector_op            dot, cross, magnitude, unit, angle, projection, parallelogram area
+  ode_solve            dsolve with optional initial conditions (y' / y'' syntax)
+  domain_range         real domain, singularities, optional range
+
+COMPLEX NUMBERS, SEQUENCES, BINOMIAL, PROBABILITY & STATS
+  complex_op           +−×÷, modulus, argument, conjugate, polar form, powers,
+                       all n-th roots; parses '3+4i'
+  sequence_series      AP / GP (incl. infinite sum) / HP, Σn, Σn², Σn³, AM-GM-HM
+  binomial_theorem     full expansion, middle terms, T_{r+1}, coefficient of any term
+  combinatorics        nCr, nPr, factorial, 2^n, n^r
+  binomial_probability P(X=k), at least/most; mean np, variance npq
+  statistics_calc      mean/median/mode/pop+sample variance & std/quartiles/IQR
+  normal_probability   Φ via erf: below/above/between
+
+COORDINATE & 3D GEOMETRY
+  line_op              equation from 2 pts, point-line distance, angle between
+                       lines, intersection, foot+image of point, parallel distance
+  circle_op            centre+radius → equation; equation → centre/radius
+                       (completing square); 3-point circle; tangent length
+  conic_op             parabola/ellipse/hyperbola: focus, directrix, eccentricity,
+                       latus rectum, asymptotes, vertices
+  triangle_op          from 3 vertices: area, angles, type, centroid,
+                       circumcenter+R, incenter+r, orthocenter; or Heron from sides
+  solid3d              point distances, plane from 3 pts, point-plane distance,
+                       foot/image in plane, line-plane & plane-plane angles,
+                       skew-line shortest distance, point-line 3D distance
+
+PLOTS (served as media, downloadable)
+  plot_graph           multi-function SVG graphs w/ scatter points
+  plot_surface         3D surface z=f(x,y) PNG
+
+PHYSICS — via physics_formula(formula, params)  [45+ formulas]
+  KINEMATICS: projectile (T, R, H, components); suvat (solve from any 3-4 of
+              u,v,a,s,t — handles quadratic time)
+  LAWS OF MOTION: friction_incline (static/kinetic state machine, N, f, a)
+  WORK-ENERGY-POWER: work, ke, pe, spring_pe, power, efficiency, work-energy theorem
+  MOMENTUM: center_of_mass, impulse (F,t / Δp), 1-D conservation, rocket thrust
+  CIRCULAR + SHM: circular_motion, shm (ω, T, E), pendulum, physical pendulum,
+              spring combinations, energy partition at displacement x
+  GRAVITATION: escape/orbital velocity, surface g, PE, g at height/depth,
+               Kepler III, orbit energies (E=−KE=PE/2), escape energy
+  ROTATION: MOI table, rolling KE (k per body), rolling down incline (a, f,
+            µ_min), parallel axis, angular-momentum conservation
+  COLLISIONS: 1-D elastic/inelastic/partial (coefficient e), KE lost
+  FLUIDS: Archimedes buoyancy, float fraction, apparent weight, Bernoulli
+          (solves missing variable), continuity, Torricelli, Stokes terminal
+          velocity, Reynolds, capillary rise, excess pressure, Pascal hydraulic
+  ELASTICITY: Young's modulus, stress/strain, stored energy, thermal stress,
+              Poisson ratio
+  THERMAL: calorimetry, latent heat, mixing, thermal expansion (linear/area/
+           volume), conduction (rod + series), Stefan radiation, Wien, Newton cooling
+  KINETIC THEORY: v_rms/v_avg/v_mp, ideal pressure + KE, mean free path,
+                  DOF → γ/Cv/Cp
+  THERMODYNAMICS: ideal gas, first law, isothermal/adiabatic/isobaric/isochoric
+                  work, Carnot efficiency/COP, engine efficiency
+  ELECTROSTATICS: Coulomb, point field+potential, ring axis, infinite sheet,
+                  shell (in/out), solid sphere (in/out), dipole field/torque/
+                  energy, pair potential energy, Gauss flux, work via potential,
+                  partial dielectric slab, energy density
+  CAPACITORS: series/parallel with energy, charge-sharing between capacitors
+              (common V, energy lost)
+  CURRENT: Ohm's-law solver (V/I/R + heat), 
+  MAGNETISM: Lorentz force + radius, wire field, solenoid, force on wire,
+             parallel wires, loop torque + magnetic moment, loop centre/axis
+             field, charged-particle helix (r, T, pitch)
+  EMI: motional emf, self/mutual emf, solenoid L, inductor energy + B energy
+       density, LR growth/decay, LC oscillation, induced charge
+  AC: LCR impedance/phase/resonance/Q/power factor, rms↔peak, transformer
+  EM WAVES: c=fλ, E0↔intensity, radiation pressure (absorb/reflect)
+  RAY OPTICS: lens/mirror (Cartesian), Snell, TIR critical angle, prism n and
+              min deviation, lens combinations, magnifier, telescope, microscope
+  WAVE OPTICS: YDSE fringe width/positions, single-slit minima + central max,
+               Brewster, Malus, Rayleigh criterion
+  SOUND/STRING: v=√(T/µ), harmonics (fixed/open/closed), beats, dB level ↕
+  MODERN: photoelectric (Kmax, stopping V, threshold), de Broglie, Bohr (E_n,
+          r_n, v_n, transitions w/ Balmer/Lyman series), nuclear binding energy
+          (mass defect), radioactive decay (N(t), activity, mean life, time
+          for fraction), X-ray min wavelength, Moseley, E=mc²
+  ERRORS: general error propagation δf via symbolic partials (quadrature)
+
+CHEMISTRY
+  chemistry_balance    charge-aware balancer incl. redox with H+/H2O/e-
+                       (parses MnO4-, SO4^2-, Fe3+; reports e- transferred)
+  molar_mass           incl. hydrates (CuSO4.5H2O)
+  stoich_calc          mol/g/STP-volume conversions on balanced reactions
+  limiting_reagent     identifies LR, extent, max products, % yield
+  ph_calc              strong/weak acid+base, basicity, dilution, Ka/Kb
+  ionic (chem_calc)    Henderson buffers (acidic+basic), Ksp↔solubility
+                       (AB/AB2/A2B/AB3), salt hydrolysis pH
+  nernst_emf           E = E° − (RT/nF)lnQ (+0.0591 form at 298 K)
+  faraday_electrolysis moles e-, charge, mass deposited
+  gibbs_free_energy    ΔG = ΔH − TΔS, spontaneity, equilibrium T
+  equilibrium          Kp↔Kc (Δn from reaction), % dissociation α from Kp
+  kinetics             first/second/zero order integrated laws, half-lives,
+                       Arrhenius (k from A,Ea,T; two-temperature ratio)
+  thermochem           q=mcΔT, bond-enthalpy ΔH, transition entropy,
+                       solution calorimetry ΔH
+  electrochem2         Λm = 1000κ/M, α = Λm/Λ°m, E°cell, concentration Nernst
+  oxidation_number     ON solver with rules (F, O peroxide/superoxide, H in
+                       hydrides, groups 1/2, Al) — e.g. Cr in Cr2O7²⁻ → +6
+  bond_order           MO theory: B2…F2 + ions, NO/NO+/CN−/CO/He2+/Li2 —
+                       bond order, magnetism, unpaired e- (verified table)
+  coordination         CFSE (oct/tet, weak/strong with pairing), spin-only
+                       magnetic moment µ=√(n(n+2)), EAN
+  organic              degree of unsaturation, empirical/molecular formula,
+                       combustion analysis
+  gas_laws             combined gas law (any missing), partial pressure,
+                       Graham, van der Waals P, compressibility Z
+  solutions            colligative (π, ΔTb, ΔTf), Raoult lowering, Henry,
+                       ideal vapour composition
+  concentration        molarity/molality/mole fraction/ppm, dilution solver,
+                       M↔m with density
+
+───────────────────────────────────────────────────────────────────────────────
+5. SYLLABUS COVERAGE MAP (JEE ADVANCED)
+───────────────────────────────────────────────────────────────────────────────
+MATHEMATICS
+  ✅ Quadratic equations & theory of equations   → quadratic_analysis, solve_equation
+  ✅ Sequences & series (AP/GP/HP, AGP sums via python_exec, Σ formulas)
+  ✅ Complex numbers (algebra, polar, n-th roots)
+  ✅ Binomial theorem (+ applications via python_exec)
+  ✅ Permutations & combinations, Probability (binomial, normal),
+     Statistics (full descriptive stats)
+  ✅ Matrices & determinants, systems of equations
+  ✅ Vectors (3D products) + 3D geometry (lines, planes, angles, distances)
+  ✅ Coordinate geometry: lines, circles, parabola/ellipse/hyperbola properties
+  ✅ Trigonometry (solve_equation + simplify trigsimp; identities)
+  ✅ Functions (domain/range), Limits, Continuity
+  ✅ Differentiation & Applications (via calculus + python_exec: tangents,
+     maxima-minima, monotonicity)
+  ✅ Integration (definite/indefinite) + Area (plot_graph shading via python_exec)
+  ✅ Differential equations (ode_solve)
+  (Straight-line/circle tangents-normals & conic tangents: handled with
+   line_op/circle_op/python_exec combinations)
+
+PHYSICS
+  ✅ General: units, dimensions (python_exec), errors (error_propagation)
+  ✅ Kinematics, Laws of motion, Friction, Work-Energy-Power, MOMENTUM &
+     collisions, Centre of mass
+  ✅ Rotational mechanics (MOI, torque, rolling, angular momentum)
+  ✅ Gravitation (full)
+  ✅ SHM & oscillations, Elasticity
+  ✅ Fluid mechanics (statics + Bernoulli + viscosity + surface tension)
+  ✅ Thermal: expansion, calorimetry, conduction, radiation, KT & thermodynamics
+  ✅ Electrostatics (full incl. Gauss, dielectrics), Capacitors
+  ✅ Current electricity, Magnetic effects (full), EMI (full), AC (full)
+  ✅ EM waves (basics)
+  ✅ Ray optics (full), Wave optics (full)
+  ✅ Modern: photoelectric, de Broglie, Bohr, X-rays, nuclei (BE, decay)
+  (Semiconductor devices are NOT in the JEE-Advanced syllabus — handled
+   qualitatively by the LLM if ever asked)
+
+CHEMISTRY
+  ✅ Mole concept, stoichiometry, limiting reagent, empirical/molecular formula,
+     combustion analysis
+  ✅ Atomic structure (Bohr, de Broglie via physics), gas laws, kinetic theory
+  ✅ Chemical thermodynamics (ΔH bond energetics, ΔG, ΔS, calorimetry)
+  ✅ Equilibrium (Kp/Kc, α), Ionic equilibrium (pH, buffers, Ksp, hydrolysis)
+  ✅ Redox (ON solver + charge-aware balancing), Electrochemistry (full)
+  ✅ Chemical kinetics (full integrated laws + Arrhenius)
+  ✅ Chemical bonding: MO bond order & magnetism (diatomics), VSEPR via
+     3D diagram mode, periodic properties (LLM qualitative)
+  ✅ Coordination compounds: CFSE, magnetic moment, EAN
+  ✅ Solutions & colligative properties
+  ✅ Organic: DoU, composition tools; nomenclature/mechanisms/reaction
+     sequences are reasoned by the LLM (diagram mode can draw mechanisms)
+
+───────────────────────────────────────────────────────────────────────────────
+6. ARCHITECTURE & FILE-BY-FILE GUIDE
+───────────────────────────────────────────────────────────────────────────────
+jee-tutor/
+├── app.py                  FastAPI server: SSE chat stream, uploads, chats CRUD,
+│                           settings API, static+media serving, SPA fallback
+├── config.py               Runtime settings; .env loader; EMBEDDED_GEMINI_KEY
+│                           fallback; media/data dir creation; helpers
+├── storage.py              Chat persistence — data/chats/<id>.json (atomic writes)
+├── engines/
+│   ├── __init__.py         TOOL REGISTRY: 38 tools; physics_formula dispatcher
+│   │                       (flat + grouped kinds); chem_calc dispatcher
+│   ├── math_engine.py      SymPy: algebra, calculus, complex, sequences, binomial,
+│   │                       probability/stats, 2D/3D geometry, ODEs, units
+│   ├── physics_engine.py   45+ verified physics formula solvers (flat + grouped)
+│   ├── chemistry_engine.py Balancer (charge-aware), stoichiometry, ionic, kinetics,
+│   │                       electrochem, MO bond order, coordination, organic
+│   ├── plotting.py         matplotlib SVG graphs + 3D surface PNG (dark theme)
+│   └── tools_exec.py       calc (AST-whitelisted) + python_exec (subprocess sandbox)
+├── services/
+│   ├── gemini_client.py    google-genai client wrapper; gen_config handles
+│   │                       Gemini-3.x (no thinkingConfig) vs 2.5 (budget=0 opt-out)
+│   ├── prompts.py          38 Gemini function declarations + 4 system prompts
+│   ├── router.py           Per-mode generators: tool loop w/ thought-signature
+│   │                       echo-back, model fallback chain, 503 retries, SSE events
+│   ├── manim_service.py    Code validation (banned imports), render subprocess,
+│   │                       MP4 extraction
+│   └── uploads.py          Save + parse PDF/DOCX/TXT/CSV; images kept for vision
+├── static/
+│   ├── index.html          SPA shell (sidebar, composer, keypad, modals)
+│   ├── css/app.css         Full dark theme, responsive
+│   └── js/
+│       ├── app.js          Frontend app: SSE handling, chat list, media cards,
+│       │                   keypad, settings, copy/download actions
+│       ├── markdown.js     Mini markdown → HTML + KaTeX typesetting
+│       ├── scene3d.js      three.js scene builder + SimpleOrbit + DOM labels
+│       ├── katex/…         KaTeX 0.16.11 (local, incl. auto-render)
+│       └── three.min.js    three.js r128 (local)
+├── data/chats/             Chat JSON storage (git-ignored)
+├── media/                  uploads/ plots/ anim/ manim/ diagrams/ (git-ignored)
+├── .env                    GEMINI_API_KEY=…, GEMINI_MODEL, MANIM_QUALITY, THINKING
+│                           (git-ignored — never commit)
+├── .env.example            Template for new deployments
+├── requirements.txt        Python dependencies
+├── setup.sh / run.sh       Environment setup / launch scripts
+├── Dockerfile              Full image incl. Manim + LaTeX
+└── README.md               Deployment-focused readme
+
+DATA FLOW (numerical example):
+  Browser → POST /api/chat {mode, message, attachment_ids, chat_id}
+    → router.run_numerical: Gemini (tools=38 decls) → function_call
+    → engines.execute (SymPy/NumPy/formula solvers) → FunctionResponse
+    → (loop ≤ 7) → final streaming write-up → SSE events:
+      chat → status → tool* → delta* → final → done
+  User message + assistant final message persisted to data/chats/<id>.json.
+
+───────────────────────────────────────────────────────────────────────────────
+7. API REFERENCE
+───────────────────────────────────────────────────────────────────────────────
+GET    /                     SPA
+GET    /api/health           {ok, key, manim, latex}
+GET    /api/config           {has_key, key_masked, model, quality, thinking, manim, latex}
+POST   /api/config           {api_key?, model?, quality?, thinking?} → saves to .env
+GET    /api/chats            list [{id,title,updated,count}]
+GET    /api/chats/{id}       full chat
+DELETE /api/chats/{id}       delete
+POST   /api/upload           multipart file → {id, name, kind, url, text?}  (≤20 MB)
+POST   /api/chat             {mode: numerical|diagram|animation|video,
+                              message, attachment_ids?, chat_id?}
+                              → text/event-stream: chat|status|tool|delta|media|
+                                code|final|error|done
+Media:  /media/plots|anim|manim|diagrams|uploads/<file>
+Static: /static/…
+
+───────────────────────────────────────────────────────────────────────────────
+8. CONFIGURATION
+───────────────────────────────────────────────────────────────────────────────
+.env keys (also settable in Settings UI; env vars override .env):
+  GEMINI_API_KEY   the key (BUILT-IN FALLBACK exists in config.py so the app
+                   works even if .env is deleted)
+  GEMINI_MODEL     default gemini-3.6-flash (see note)
+  MANIM_QUALITY    -ql (480p15) | -qm (720p30) | -qh (1080p60)
+  THINKING         1/0 — deep-reasoning toggle (affects 2.5-family only;
+                   Gemini 3.x manages thinking internally)
+
+MODEL NOTE (important): your key is a new-generation key — Google deprecated
+gemini-2.5-* for it ("no longer available to new users"). The app therefore
+defaults to gemini-3.6-flash and, on errors, automatically falls back through
+gemini-3.7-flash → 3.6 → 3.5 → flash-latest, retrying transient 503
+"high demand" errors up to 4× with backoff. Settings also exposes 3.7/3.8/3.5.
+
+───────────────────────────────────────────────────────────────────────────────
+9. DEPLOYMENT
+───────────────────────────────────────────────────────────────────────────────
+LOCAL:            ./setup.sh && ./run.sh  → http://localhost:8000
+ORACLE CLOUD FREE TIER (Ubuntu ARM/AMD):
+  git clone <repo> && cd jee-tutor && ./setup.sh
+  echo "GEMINI_API_KEY=<your key>" >> .env
+  # systemd unit (README has the copy-paste block), then open port 8000 in
+  # both iptables (netfilter-persistent) and the OCI Security List.
+  # Optional: Caddy for HTTPS → caddy reverse-proxy --from domain --to :8000
+DOCKER:           docker build -t jee-tutor . &&
+                  docker run -d -p 8000:8000 -e GEMINI_API_KEY=… jee-tutor
+
+───────────────────────────────────────────────────────────────────────────────
+10. SECURITY NOTES
+───────────────────────────────────────────────────────────────────────────────
+• .env is in .gitignore — the key is NOT committed by normal git workflows.
+• The key ALSO ships embedded in config.py (owner's explicit request) so the
+  app "just works". If you publish the repo publicly, REGENERATE the key at
+  aistudio.google.com first (it was shared in chat), then update .env/Settings;
+  optionally blank EMBEDDED_GEMINI_KEY in config.py.
+• python_exec sandbox: separate process, banned-token filter (os/sys/subprocess/
+  network/open/exec/eval…), 25 s timeout, no workspace write access.
+• Manim renderer: banned-import regex list before executing model code.
+• Animation iframes are sandboxed (allow-scripts only, no same-origin).
+
+───────────────────────────────────────────────────────────────────────────────
+11. TESTING PERFORMED & VERIFIED RESULTS
+───────────────────────────────────────────────────────────────────────────────
+ENGINE UNIT TESTS (all passed)
+  • Complex: 8^(1/3) roots → {2, −1±1.732i} ✓; (3+4i)/(1−2i) = −1+2i ✓
+  • AP 2,3,10 terms → 29, S=155 ✓; GP infinite 1,½ → 2 ✓; Σn³(10)=3025 ✓
+  • Binomial (x+2)^5 → x⁵+10x⁴+40x³+80x²+80x+32; coeff x³=40 ✓
+  • Stats [2,4,4,4,5,5,7,9] → mean 5, var_pop 4, mode [4] ✓
+  • Quadratic x²−5x+6 → roots 2,3, vertex (2.5,−0.25) ✓
+  • ODE y'=−2y, y(0)=3 → 3e^(−2x), classified separable ✓
+  • Circle x²+y²−4x+6y−12=0 → centre (2,−3), r=5 ✓
+  • Ellipse a=5,b=3 → e=0.8, foci ±4, LR 3.6 ✓
+  • Triangle (0,0),(4,0),(0,3) → 3-4-5, right-angled, R=2.5, r=1 ✓
+  • Skew lines distance = 1 ✓; perpendicular lines → 90° ✓
+  • Physics: friction incline (2 kg, 37°, µk=0.3) → a=3.55 ✓; sphere rolling
+    30° → a=3.5, µmin=0.165 ✓; water mixing 40°C ✓; O2 v_rms 483.6 m/s ✓;
+    O-16 BE/A = 7.98 MeV ✓; LR circuit τ=0.02 ✓; Hα 656.1 nm ✓
+  • Chemistry: MnO4−+Fe²⁺+H⁺ → 1,5,8 ✓; Cr2O7²⁻+I−+H⁺ → 1,6,14 ✓;
+    C2O4²⁻ permanganate → 2,5,16 ✓; glucose CH2O→C6H12O6 ✓; benzene DoU=4 ✓;
+    Kp(N2+3H2→2NH3, Kc=10, 500K) ✓; O2 MO: BO 2, 2 unpaired ✓; O2²⁻: BO 1 ✓;
+    N2: BO 3 ✓; B2: 2 unpaired ✓; NO⁺: BO 3 ✓; Cr(VI) in dichromate ✓;
+    CH3COONa pH 8.87 ✓
+  • SUVAT: (0,2,3t)→s9 ✓; (5,15,a2)→t5,s50 ✓; (20,0,s40)→a−5,t4 ✓
+END-TO-END (through Gemini + engines, with the real key)
+  • Projectile numerical → 5 tool calls, correct boxed answers ✓
+  • Diagram: block on 30° incline FBD → SVG with correct N=42.44 N, f=12.73 N,
+    a=2.35 m/s² ✓ (rendered & visually inspected)
+  • 3D scene: CH4 tetrahedral → 18-object interactive scene ✓
+  • Animation: pendulum with energy bars → self-contained HTML ✓
+  • Manim video: projectile explainer → 16 s MP4 with LaTeX + correct graph ✓
+  • First-order kinetics numerical → python_exec+calc, 25%/30 min/99.6 min ✓
+  • PDF upload → text extraction ✓; chat persistence & list/delete ✓
+FRONTEND: node --check on app.js, markdown.js, scene3d.js — all valid ✓
+
+───────────────────────────────────────────────────────────────────────────────
+12. CHANGELOG
+───────────────────────────────────────────────────────────────────────────────
+BUILD 1.0 — initial app
+  • FastAPI backend + vanilla-JS SPA (4 modes, SSE streaming, chats sidebar,
+    keypad, attachments, settings, copy/download).
+  • Engines v1: math (solve/calculus/matrix/vector/units/constants), ~18
+    physics formulas, chemistry (balance/molar/stoich/pH/Nernst/Faraday/ΔG/
+    colligative), plotting, sandboxes.
+  • Manim service with auto-fix loop; three.js 3D scene renderer; KaTeX.
+
+BUILD 1.1 — model fixes for the new Gemini key
+  • gemini-2.5-* 404 for this key → default gemini-3.6-flash; fallback chain
+    across 3.x models + flash-latest; patient 503 retry (4 attempts, backoff).
+  • Gemini-3 thought signatures: model function_call content is echoed back
+    VERBATIM in the tool loop (rebuilding the parts broke the API with 404).
+  • gen_config: thinkingConfig sent only for 2.5-family models (3.x rejects
+    thinking_budget:0 with INVALID_ARGUMENT).
+  • Streaming final-answer path: chunk-validated model fallback + retries.
+  • Fixed NamedTemporaryFile duplicate-kwarg crash in python_exec.
+  • Manim prompt: forbid ManimGL-only constants (UP_RIGHT…) after a render
+    failure; Manim video E2E verified (16 s MP4).
+
+BUILD 3.1 — GITHUB PUSH-PROTECTION FIX (current)
+  • GitHub secret-scanning blocked pushing the repo because .env contained the
+    raw Gemini key ("GCP API Key … on .env"). Fix: .env REMOVED from the
+    distribution (regenerate locally if you want it; .env.example has only
+    placeholders) and both embedded keys in config.py are now base64-encoded
+    (decoded at startup) so the scanner finds no raw pattern. Keys remain fully
+    pre-installed — verified with a fresh-clone simulation (no .env): health
+    key:true, PIN 1234 lock, live chat E2E.
+  • Guidance if you used GitHub's dialog: pick nothing — after this fix the
+    push passes without any bypass; never choose "Allow secret".
+
+BUILD 3.0 — FINAL GITHUB RELEASE
+  • DUAL-LLM: Groq fallback integrated end-to-end. When Gemini errors/503s (or
+    LLM_PROVIDER=groq), the ENTIRE flow runs on Groq: tool loop (OpenAI-style
+    tool_calls converted from Gemini FDs), JSON modes (diagram/animation/video),
+    and the final streaming write-up. Chain: openai/gpt-oss-120b → qwen/qwen3.8-27b
+    → openai/gpt-oss-20b (tool-calling + JSON mode verified live). Groq key embedded.
+    NOTE: Groq has no vision model → image attachments noted as text on fallback.
+  • ALWAYS-LOCKED: PIN default 1234 (embedded; APP_PIN/Settings override). Cookie
+    is now session-only → PIN asked EVERY time the app is opened. /api/config now
+    PIN-gated (returns {pin_locked:true} while locked).
+  • Verified live: groq-provider numerical (tool loop, correct v=18/s=54), groq
+    diagram SVG, auto-provider regression, lock flow (wrong-PIN 401, unlock 200,
+    locked config). Both keys + PIN embedded in config.py/.env for GitHub upload.
+
+BUILD 2.2 — HOSTING REALITY
+  • HF changed policy: Docker/Gradio Spaces now need PRO ($9/mo) — only Static
+    Spaces stay free. HF guide kept with a COST-CHECK warning.
+  • New LITE package (jee-tutor-lite) for Koyeb's free 512 MB container:
+    pure-SVG plot engine (no matplotlib/numpy), video mode gracefully falls
+    back to interactive animations (DISABLE_MANIM=1), slim Dockerfile,
+    DEPLOY-KOYEB.txt step-by-step.
+  • FIX: run.sh was missing from both hosting packages (container would not
+    start) — found in lite E2E testing, added to lite + hf packages.
+  • Verified: lite health (key via env), video→animation fallback (live),
+    numerical tool calls, SVG plotting.
+
+BUILD 2.1 — DEPLOYMENT EDITION
+  • Access PIN lock (APP_PIN env or Settings ⚙): root page shows a lock screen,
+    all data APIs return 401; /api/unlock sets an httpOnly cookie (30 days).
+    Purpose: protect the key when the app is on PUBLIC hosting (Hugging Face).
+  • EMBED_KEY=0 env toggle (used by the HF Space) — disables the baked-in key
+    so public deployments take the key only from a hosting Secret.
+  • Settings UI: optional "Access PIN" field (set / change / ✕ clear).
+  • Hugging Face Space package (jee-tutor-hf.zip): Dockerfile tuned for HF
+    (port 7860, non-root user, assets fetched at build), README with Space
+    YAML front-matter, DEPLOY-HF.txt (browser-only drag-and-drop steps).
+  • Oracle one-command installer (oci-install.sh) + OCI-STEPS.txt plain-English
+    guide (account → free VM → security rule → GitHub upload → one SSH command
+    → systemd auto-start + firewall).
+  • Testing guide (TESTING-GUIDE.txt) for local PC trials (WSL2/Docker/Windows).
+
+BUILD 2.0 — FULL JEE-ADVANCED SYLLABUS EDITION
+  • math_engine: +15 tool areas — complex numbers, sequences/series, binomial,
+    combinatorics, binomial & normal probability, descriptive statistics,
+    quadratic analysis, domain/range, ODE solving, line/circle/conic/triangle
+    coordinate tools, 3D solid geometry. Fixed: two-sided limits, 'Wien'
+    constant key, vector_op cleanup, SymPy-1.14 API (function_domain removed →
+    continuous_domain over Reals), implicit-multiplication parser.
+  • physics_engine: suvat rewritten (pure-formula solver, handles 3 OR 4
+    knowns, quadratic-time case, sign warnings). +20 grouped topics: friction
+    incline, work-energy-power, momentum/CoM, fluids (10 sub-solvers),
+    elasticity, thermal (9), kinetic theory, thermodynamic processes,
+    electrostatics (11), capacitor charge sharing, magnetism extras, EMI (7),
+    AC circuits, EM waves, ray optics extras, wave optics extras, strings &
+    sound, rotation extras, SHM extras, modern physics extras (BE, decay,
+    X-ray, Moseley, Bohr transitions), gravitation extras, error propagation.
+  • chemistry_engine: charge-aware balancer (smart 'Fe3+' vs 'MnO4-' digit
+    disambiguation, e- support, redox-verified). +16 tool groups: limiting
+    reagent, empirical/molecular formula, combustion analysis, degree of
+    unsaturation, gas laws, Kp/Kc + α, ionic (buffers/Ksp/salt pH),
+    oxidation-number solver, kinetics (orders + Arrhenius), thermochem,
+    electrochemistry extras, MO bond-order engine (13-specie verified table),
+    coordination (CFSE/magnetic moment/EAN), organic helpers, solution extras,
+    concentration conversions.
+  • Registry: 38 Gemini tools total; physics_formula + chem_calc grouped
+    dispatchers (compact schemas with exhaustive param docs).
+  • config.py: EMBEDDED_GEMINI_KEY fallback (key stays installed even without
+    .env — per owner request).
+  • app.py/uploads.py: attachment URL handling cleaned up.
+  • Verification: 40+ engine unit tests, node syntax checks, live E2E on all
+    four modes, kinetics E2E on the expanded toolset.
+
+───────────────────────────────────────────────────────────────────────────────
+13. TROUBLESHOOTING
+───────────────────────────────────────────────────────────────────────────────
+"No Gemini API key"        Settings (⚙) → paste key. (Embedded fallback makes
+                           this rare.)
+404 model no longer…       Model deprecated for your key — keep the default
+                           3.6-flash or pick another from Settings.
+503 / "high demand"        Google free-tier load. The app retries across 4
+                           models; resend after a minute if all fail.
+Manim render fails         ./setup.sh ensures ffmpeg+LaTeX; auto-fix loop
+                           handles most code errors (2 attempts).
+Slow videos                Use 480p15 quality; 1 GB VMs: render at 480p.
+KaTeX/three.js missing     Re-run ./setup.sh (downloads into static/js/).
+CORS/host issues           Server binds 0.0.0.0 and serves the SPA itself —
+                           access via the same origin only.
+
+───────────────────────────────────────────────────────────────────────────────
+14. KNOWN LIMITATIONS & FUTURE IDEAS
+───────────────────────────────────────────────────────────────────────────────
+• Google free tier can 503 under load — retries help but are not magic.
+• Organic reaction mechanisms are LLM-reasoned (no reaction engine) — standard
+  practice; mechanisms/diagrams can be drawn in Diagram mode.
+• JEE-Advanced semiconductors/communication: not in syllabus; qualitative only.
+• python_exec is compute-only (no internet/filesystem) by design.
+• Ideas: user accounts + sync, RAG over NCAML/Cengage PDFs, image-input OCR of
+  printed questions in the numerical flow (vision already works via
+  attachments), per-test analytics, spaced-repetition of attempted problems.
+
+═══════════════════════════════════════════════════════════════════════════════
+                             END OF DOCUMENTATION
+═══════════════════════════════════════════════════════════════════════════════

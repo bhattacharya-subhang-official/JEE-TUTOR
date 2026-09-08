@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+python-multipart
+google-genai
+sympy
+numpy
+scipy
+matplotlib
+pypdf
+python-docx
+aiofiles
+manim
+pycairo

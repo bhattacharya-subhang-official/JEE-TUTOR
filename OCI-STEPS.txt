@@ -1,0 +1,87 @@
+═══════════════════════════════════════════════════════════════════════════════
+     ORACLE CLOUD FREE TIER — PLAIN-ENGLISH STEPS (no coding, just clicks+paste)
+═══════════════════════════════════════════════════════════════════════════════
+Result: your app on a private URL  http://<VM-IP>:8000  that works 24/7 for
+free, protected by your PIN. The VM is MUCH stronger than any free web host
+(you can use up to 4 CPUs / 24 GB RAM free — "Always Free").
+
+WHAT YOU NEED BEFORE STARTING
+  • A credit/debit card for Oracle's ONE-TIME identity check.
+    (They do NOT charge you on Always Free. You can set a "budget alert".)
+  • Your Gemini API key (regenerated fresh from aistudio.google.com).
+  • ~45 minutes.
+
+STEP 1 — Create the Oracle account
+  1. Go to  cloud.oracle.com  → "Start for free".
+  2. Fill: email, verify, choose Home Region (pick the one nearest to you,
+     e.g. "India Central (Mumbai)" / "Singapore"), account details, card.
+  3. Wait for the tenancy to be ready (~5 min).
+
+STEP 2 — Create the free VM
+  1. In the console: ☰ menu → Compute → Instances → "Create instance".
+  2. Name: jee-tutor
+  3. Image: "Canonical Ubuntu 22.04" (or 24.04) — keep default.
+  4. Shape: click "Change shape" →
+        • Best: "Ampere" (ARM) → shape VM.Standard.A1.Flex → set 2 OCPU,
+          12 GB memory  (all Always-Free).
+        • If Ampere shows "out of capacity" (common): either change
+          Availability Domain and retry a few times over a day or two,
+          OR fall back to "VM.Standard.E2.1.Micro" (AMD, 1 GB — always free,
+          works, but 1080p video renders will be slow; keep 480p).
+  5. Networking: keep defaults (public IP assigned). SSH keys: "Generate a
+     key pair" → Download BOTH the private key (.key) and public key (.pub).
+     KEEP THE PRIVATE KEY FILE SAFE.
+  6. "Create".  Wait until the instance shows RUNNING, then copy its
+     "Public IP address".
+
+STEP 3 — Open port 8000 in Oracle's cloud firewall
+  1. On the instance page click the name of the "Subnet".
+  2. Click the "Security List" (Default Security List...).
+  3. "Add Ingress Rules" → add ONE rule:
+        Source Type: CIDR   Source: 0.0.0.0/0
+        IP Protocol: TCP    Destination Port Range: 8000
+  4. Save. (The VM's own internal firewall is handled by my installer.)
+
+STEP 4 — Get the files onto the VM (EASIEST: GitHub)
+  1. Make a free github.com account. Create a repository named jee-tutor
+     (Public, don't add README).
+  2. Click "uploading an existing file" → drag the CONTENTS of your
+     extracted jee-tutor folder (all files and folders EXCEPT: .env, data,
+     media) → "Commit changes".
+     (.env is a hidden file — you may not be able to select it; good!)
+     IMPORTANT: never upload .env — your key goes to the VM in step 5 only.
+  3. Copy your repo URL, it looks like:
+     https://github.com/YOURNAME/jee-tutor.git
+
+STEP 5 — One command on the VM
+  1. On your PC open PowerShell (Windows) or Terminal (Mac/Linux).
+  2. SSH into the VM (replace the path + IP):
+       Windows:   ssh -i C:\path\to\ssh-key-xxx.key ubuntu@<VM_PUBLIC_IP>
+       Mac/Linux: ssh -i ~/path/ssh-key-xxx.key ubuntu@<VM_PUBLIC_IP>
+     First time type "yes". You should see the Ubuntu welcome text.
+  3. Paste this ONE command (replace YOUR_REPO_URL and YOUR_GEMINI_KEY):
+
+       curl -fsSL https://raw.githubusercontent.com/YOURNAME/jee-tutor/main/oci-install.sh -o oci-install.sh && sudo bash oci-install.sh YOUR_GEMINI_KEY https://github.com/YOURNAME/jee-tutor.git
+
+     (If your branch is "master" not "main", use master in the URL.)
+  4. Wait ~10 minutes. At the end it prints your app's URL.
+
+STEP 6 — Lock it and use it
+  • Open http://<VM_PUBLIC_IP>:8000 → it works instantly (key already set).
+  • Click Settings (⚙) → set an Access PIN (so only you can use it).
+  • Done. It auto-starts after reboots. Chats are saved ON the VM (persistent!).
+
+ALTERNATIVE WITHOUT GITHUB
+  • Upload jee-tutor.zip to the VM from your PC:
+      scp -i <key> jee-tutor.zip ubuntu@<IP>:~
+    then in SSH:
+      sudo bash ~/oci-install.sh YOUR_GEMINI_KEY ~/jee-tutor.zip
+    (you'd still need oci-install.sh on the VM — copy-paste it via
+     "nano oci-install.sh" or download it from the chat workspace.)
+
+IF SOMETHING FAILS
+  • "Out of capacity" when creating VM → retry later / other AD / E2.1.Micro.
+  • Page doesn't load → re-check STEP 3 (Security List rule) — 90% of the
+    time that's the cause.
+  • Send me the last 30 lines of  `journalctl -u jee-tutor -n 30`  from SSH.
+═══════════════════════════════════════════════════════════════════════════════
