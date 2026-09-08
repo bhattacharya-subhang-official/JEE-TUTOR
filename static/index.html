@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JEE Tutor — Advanced Solver</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%236ea8ff'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='%230b0e1a' font-family='Georgia'%3E%CE%A3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/js/katex/katex.min.css">
+<link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside id="sidebar">
+    <div class="sb-head">
+      <div class="logo"><span class="logo-mark">Σ</span><span class="logo-text">JEE<b>Tutor</b></span></div>
+      <button id="collapseBtn" class="icon-btn" title="Collapse sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+    </div>
+    <button id="newChatBtn" class="new-chat-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg>
+      New chat
+    </button>
+    <div class="sb-label">Recent</div>
+    <nav id="chatListNav" class="chat-nav"></nav>
+    <div class="sb-foot">
+      <button id="settingsBtn" class="sb-foot-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </button>
+      <div id="keyStatus" class="key-status"></div>
+    </div>
+  </aside>
+  <div id="sbScrim"></div>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <main id="main">
+    <header id="topbar">
+      <button id="menuBtn" class="icon-btn" title="Open sidebar">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="tb-title">JEE <b>Advanced</b> Solver</div>
+      <span id="modeBadge" class="mode-badge">🧮 Numerical</span>
+      <div class="tb-spacer"></div>
+      <span id="engineStatus" class="engine-status" title="Manim / LaTeX availability"></span>
+    </header>
+
+    <div id="chatScroll">
+      <div id="chatColumn"></div>
+    </div>
+
+    <!-- ══════════ COMPOSER ══════════ -->
+    <div id="composerWrap">
+      <div id="chipsRow" class="chips-row"></div>
+      <div id="composer" class="composer">
+        <button id="keypadBtn" class="c-btn" title="Scientific notation keypad">∑ƒ</button>
+        <button id="attachBtn" class="c-btn" title="Attach PDF / image / doc">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <textarea id="input" rows="1" placeholder="Ask a JEE Advanced problem…"></textarea>
+        <button id="modeBtn" class="c-btn c-btn-mode">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+          <span id="modeBtnLabel">Numerical</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <button id="sendBtn" class="c-btn c-btn-send" title="Send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+        <button id="stopBtn" class="c-btn c-btn-send" style="display:none" title="Stop">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+        </button>
+      </div>
+      <div class="composer-hint">Enter to send · Shift+Enter for newline · engines: SymPy · NumPy/SciPy · Manim · units &amp; constants</div>
+      <input type="file" id="fileInput" multiple hidden
+             accept=".pdf,.docx,.txt,.md,.csv,.png,.jpg,.jpeg,.webp,.gif,.heic">
+    </div>
+  </main>
+</div>
+
+<!-- ══════════ MODE DROPDOWN ══════════ -->
+<div id="modeMenu" class="menu-pop"></div>
+
+<!-- ══════════ KEYPAD ══════════ -->
+<div id="keypadPop" class="menu-pop keypad"></div>
+
+<!-- ══════════ SETTINGS MODAL ══════════ -->
+<div id="settingsModal" class="modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><h3>Settings</h3><button id="settingsClose" class="icon-btn">✕</button></div>
+    <label class="f-label">Gemini API key</label>
+    <div class="key-row">
+      <input id="apiKeyInput" type="password" placeholder="AIza… / AQ…" autocomplete="off">
+      <button id="keyEye" class="icon-btn" title="Show/hide">👁</button>
+    </div>
+    <div class="f-help">Stored server-side in <code>.env</code> (git-ignored). Get one free at aistudio.google.com.</div>
+    <label class="f-label">Model</label>
+    <select id="modelSelect">
+      <option value="gemini-3.6-flash">Gemini 3.6 Flash — fast (recommended)</option>
+      <option value="gemini-3.7-flash">Gemini 3.7 Flash — newer</option>
+      <option value="gemini-3.8-flash">Gemini 3.8 Flash — newest</option>
+      <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+      <option value="gemini-2.5-pro">Gemini 2.5 Pro — deep reasoning (older keys)</option>
+      <option value="gemini-2.5-flash">Gemini 2.5 Flash (older keys)</option>
+    </select>
+    <label class="f-label">LLM provider</label>
+    <select id="providerSelect">
+      <option value="auto">Auto — Gemini, falls back to Groq if down (recommended)</option>
+      <option value="gemini">Gemini only</option>
+      <option value="groq">Groq only (Llama / GPT-OSS — text-only fallback)</option>
+    </select>
+    <label class="f-label">Manim video quality</label>
+    <select id="qualitySelect">
+      <option value="-ql">480p15 — fast renders</option>
+      <option value="-qm">720p30 — balanced</option>
+      <option value="-qh">1080p60 — slowest</option>
+    </select>
+    <label class="f-label">Access PIN (optional app lock)</label>
+    <div class="key-row">
+      <input id="pinInput" type="password" inputmode="numeric" placeholder="4–8 digits" autocomplete="off">
+      <button id="pinClear" class="icon-btn" title="Remove PIN" style="display:none">✕</button>
+    </div>
+    <div class="f-help">If you share the link (public hosting), a PIN stops strangers from using your API key. Everyone must enter it once per browser.</div>
+    <label class="f-check"><input id="thinkingChk" type="checkbox"> Deep reasoning (slower, better solutions)</label>
+    <div class="modal-actions">
+      <button id="settingsSave" class="primary-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="/static/js/katex/katex.min.js"></script>
+<script src="/static/js/katex/contrib/auto-render.min.js"></script>
+<script src="/static/js/three.min.js"></script>
+<script src="/static/js/markdown.js"></script>
+<script src="/static/js/scene3d.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
